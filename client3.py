@@ -35,14 +35,21 @@ QUERY = "http://localhost:8080/query?id={}"
 N = 500
 
 
+class QuoteBid(TypedDict):
+    """A quote bid object."""
+
+    price: float
+    size: int
+
+
 class Quote(TypedDict):
     """A quote object."""
 
     id: str
     stock: str
     timestamp: str
-    top_bid: Dict[str, float]
-    top_ask: Dict[str, float]
+    top_bid: QuoteBid
+    top_ask: QuoteBid
 
 
 @dataclass
@@ -55,16 +62,16 @@ class DataPoint:
     price: float
 
 
-def getDataPoint(quote: Quote) -> DataPoint:
+def get_data_point(quote: Quote) -> DataPoint:
     """Produce all the needed values to generate a datapoint"""
     stock = quote["stock"]
-    bid_price = float(quote["top_bid"]["price"])
-    ask_price = float(quote["top_ask"]["price"])
+    bid_price = quote["top_bid"]["price"]
+    ask_price = quote["top_ask"]["price"]
     price = (bid_price + ask_price) / 2.0
     return DataPoint(stock, bid_price, ask_price, price)
 
 
-def getRatio(price_a: float, price_b: float) -> Optional[float]:
+def get_ratio(price_a: float, price_b: float) -> Optional[float]:
     """Get ratio of price_a and price_b"""
     if price_b == 0:
         return None
@@ -82,7 +89,8 @@ if __name__ == "__main__":
         """ ----------- Update to get the ratio --------------- """
         prices = {}
         for quote in quotes:
-            data_points = getDataPoint(quote)
+            print(quote)
+            data_points = get_data_point(quote)
             prices[data_points.stock] = data_points.price
             print(
                 "Quoted %s at (bid:%s, ask:%s, price:%s)"
@@ -94,4 +102,4 @@ if __name__ == "__main__":
                 )
             )
 
-        print("Ratio %s" % getRatio(prices["ABC"], prices["DEF"]))
+        print("Ratio %s" % get_ratio(prices["ABC"], prices["DEF"]))
