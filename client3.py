@@ -25,7 +25,7 @@
 import json
 import random
 import urllib.request
-from typing import Optional
+from typing import Optional, TypedDict, Dict
 from dataclasses import dataclass
 
 # Server API URLs
@@ -34,42 +34,64 @@ QUERY = "http://localhost:8080/query?id={}"
 # 500 server request
 N = 500
 
+
+class Quote(TypedDict):
+    """A quote object."""
+
+    id: str
+    stock: str
+    timestamp: str
+    top_bid: Dict[str, float]
+    top_ask: Dict[str, float]
+
+
 @dataclass
 class DataPoint:
-    """ A datapoint from the server. """
-    stock : str
-    bid_price : float
-    ask_price : float
-    price : float
-    
+    """A datapoint from the server."""
 
-def getDataPoint(quote) -> DataPoint:
-    """ Produce all the needed values to generate a datapoint """
-    stock = quote['stock']
-    bid_price = float(quote['top_bid']['price'])
-    ask_price = float(quote['top_ask']['price'])
-    price = (bid_price+ask_price) / 2.
+    stock: str
+    bid_price: float
+    ask_price: float
+    price: float
+
+
+def getDataPoint(quote: Quote) -> DataPoint:
+    """Produce all the needed values to generate a datapoint"""
+    stock = quote["stock"]
+    bid_price = float(quote["top_bid"]["price"])
+    ask_price = float(quote["top_ask"]["price"])
+    price = (bid_price + ask_price) / 2.0
     return DataPoint(stock, bid_price, ask_price, price)
 
 
-def getRatio(price_a : float, price_b : float) -> Optional[float]:
-    """ Get ratio of price_a and price_b """
+def getRatio(price_a: float, price_b: float) -> Optional[float]:
+    """Get ratio of price_a and price_b"""
     if price_b == 0:
-        return
-    return price_a/price_b
+        return None
+    return price_a / price_b
 
 
 # Main
 if __name__ == "__main__":
     # Query the price once every N seconds.
     for _ in iter(range(N)):
-        quotes = json.loads(urllib.request.urlopen(QUERY.format(random.random())).read())
+        quotes = json.loads(
+            urllib.request.urlopen(QUERY.format(random.random())).read()
+        )
 
         """ ----------- Update to get the ratio --------------- """
         prices = {}
         for quote in quotes:
             data_points = getDataPoint(quote)
             prices[data_points.stock] = data_points.price
-            print("Quoted %s at (bid:%s, ask:%s, price:%s)" % (data_points.stock, data_points.bid_price, data_points.ask_price, data_points.price))
+            print(
+                "Quoted %s at (bid:%s, ask:%s, price:%s)"
+                % (
+                    data_points.stock,
+                    data_points.bid_price,
+                    data_points.ask_price,
+                    data_points.price,
+                )
+            )
 
         print("Ratio %s" % getRatio(prices["ABC"], prices["DEF"]))
