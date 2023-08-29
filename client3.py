@@ -18,9 +18,15 @@
 #  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 #  DEALINGS IN THE SOFTWARE.
 
+# Quoted ABC at (bid:115.46, ask:116.63, price:115.46)
+# Quoted DEF at (bid:115.14, ask:116.05, price:115.14)
+# Ratio 1
+
 import json
 import random
 import urllib.request
+from typing import Optional
+from dataclasses import dataclass
 
 # Server API URLs
 QUERY = "http://localhost:8080/query?id={}"
@@ -28,21 +34,29 @@ QUERY = "http://localhost:8080/query?id={}"
 # 500 server request
 N = 500
 
+@dataclass
+class DataPoint:
+    """ A datapoint from the server. """
+    stock : str
+    bid_price : float
+    ask_price : float
+    price : float
+    
 
-def getDataPoint(quote):
+def getDataPoint(quote) -> DataPoint:
     """ Produce all the needed values to generate a datapoint """
-    """ ------------- Update this function ------------- """
     stock = quote['stock']
     bid_price = float(quote['top_bid']['price'])
     ask_price = float(quote['top_ask']['price'])
-    price = bid_price
-    return stock, bid_price, ask_price, price
+    price = (bid_price+ask_price) / 2.
+    return DataPoint(stock, bid_price, ask_price, price)
 
 
-def getRatio(price_a, price_b):
+def getRatio(price_a : float, price_b : float) -> Optional[float]:
     """ Get ratio of price_a and price_b """
-    """ ------------- Update this function ------------- """
-    return 1
+    if price_b == 0:
+        return
+    return price_a/price_b
 
 
 # Main
@@ -52,8 +66,10 @@ if __name__ == "__main__":
         quotes = json.loads(urllib.request.urlopen(QUERY.format(random.random())).read())
 
         """ ----------- Update to get the ratio --------------- """
+        prices = {}
         for quote in quotes:
-            stock, bid_price, ask_price, price = getDataPoint(quote)
-            print("Quoted %s at (bid:%s, ask:%s, price:%s)" % (stock, bid_price, ask_price, price))
+            data_points = getDataPoint(quote)
+            prices[data_points.stock] = data_points.price
+            print("Quoted %s at (bid:%s, ask:%s, price:%s)" % (data_points.stock, data_points.bid_price, data_points.ask_price, data_points.price))
 
-        print("Ratio %s" % getRatio(price, price))
+        print("Ratio %s" % getRatio(prices["ABC"], prices["DEF"]))
